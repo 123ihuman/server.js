@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0a0a0a"
+    android:fillViewport="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+        
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="🔴 Last Breath" android:textSize="32sp" android:textColor="#00ff00"
+            android:textStyle="bold" android:gravity="center" android:layout_marginBottom="10dp"/>
+            
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Anti-Theft Protection" android:textSize="16sp" android:textColor="#888"
+            android:gravity="center" android:layout_marginBottom="20dp"/>
+            
+        <TextView android:id="@+id/tvStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="🔴 Tracking Inactive" android:textSize="16sp" android:textColor="#ff4444"
+            android:gravity="center" android:padding="10dp" android:background="#1a1a1a"
+            android:layout_marginBottom="15dp"/>
+            
+        <TextView android:id="@+id/tvImei" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="IMEI: Loading..." android:textSize="13sp" android:textColor="#666" android:padding="5dp"/>
+            
+        <TextView android:id="@+id/tvDeviceId" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Device ID: Loading..." android:textSize="13sp" android:textColor="#666" android:padding="5dp"
+            android:layout_marginBottom="20dp"/>
+            
+        <EditText android:id="@+id/etEmail" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="Your Email" android:inputType="textEmailAddress" android:background="#1a1a1a"
+            android:textColor="#fff" android:textColorHint="#666" android:padding="12dp" android:layout_marginBottom="10dp"/>
+            
+        <EditText android:id="@+id/etPhone1" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="Trusted Phone 1" android:inputType="phone" android:background="#1a1a1a"
+            android:textColor="#fff" android:textColorHint="#666" android:padding="12dp" android:layout_marginBottom="10dp"/>
+            
+        <EditText android:id="@+id/etPhone2" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="Trusted Phone 2" android:inputType="phone" android:background="#1a1a1a"
+            android:textColor="#fff" android:textColorHint="#666" android:padding="12dp" android:layout_marginBottom="10dp"/>
+            
+        <EditText android:id="@+id/etServerUrl" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="Server URL" android:inputType="textUri" android:background="#1a1a1a"
+            android:textColor="#fff" android:textColorHint="#666" android:padding="12dp" android:layout_marginBottom="20dp"/>
+            
+        <Button android:id="@+id/btnRegister" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="🔐 Register Device" android:background="#00ff00" android:textColor="#000"
+            android:textSize="16sp" android:padding="15dp" android:layout_marginBottom="10dp"/>
+            
+        <Button
+            android:id="@+id/btnTestPing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📡 Send Test Ping to Server"
+            android:background="#9c27b0"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:padding="14dp"
+            android:layout_marginBottom="10dp"/>
+            
+        <TextView
+            android:id="@+id/tvVisualStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status: Waiting for commands..."
+            android:textColor="#00ff00"
+            android:textSize="14sp"
+            android:padding="10dp"
+            android:background="#1a1a1a"
+            android:layout_marginBottom="10dp"/>
+            
+        <Button android:id="@+id/btnEnableTracking" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="🛡️ Enable Tracking" android:background="#ff4444" android:textColor="#fff"
+            android:textSize="16sp" android:padding="15dp" android:layout_marginBottom="10dp" android:enabled="false"/>
+            
+        <Button android:id="@+id/btnDashboard" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="📊 Dashboard" android:background="#1976d2" android:textColor="#fff"
+            android:textSize="16sp" android:padding="15dp" android:visibility="gone"/>
+            
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="⚠️ Root recommended for system-level protection"
+            android:textSize="12sp" android:textColor="#ffaa00" android:gravity="center" android:padding="10dp"
+            android:background="#1a1a1a"/>
+    </LinearLayout>
+</ScrollView>
