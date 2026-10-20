@@ -427,14 +427,17 @@ app.get('/api/commands', async (req, res) => {
         }
 
         // If no dashboard commands, check for standard block/restore
+                // If no dashboard commands, check for standard block/restore
         const result = await pool.query('SELECT status FROM devices WHERE imei = $1', [imei]);
         if (result.rows.length > 0) {
             const status = result.rows[0].status;
-            if (status === 'stolen') return res.json({ action: 'block' });
-            if (status === 'recovered') return res.json({ action: 'restore' });
+            // SEND FAST_POLL: TRUE IF STOLEN
+            if (status === 'stolen') return res.json({ action: 'block', fast_poll: true });
+            if (status === 'recovered') return res.json({ action: 'restore', fast_poll: false });
         }
 
-        res.json({ action: 'none' });
+        // Default normal mode (fast_poll: false)
+        res.json({ action: 'none', fast_poll: false });
     } catch (err) {
         console.error('Commands error:', err);
         res.status(500).json({ error: 'Internal server error' });
