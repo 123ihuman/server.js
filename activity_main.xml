@@ -49,7 +49,18 @@
         <Button android:id="@+id/btnRegister" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="🔐 Register Device" android:background="#00ff00" android:textColor="#000"
             android:textSize="16sp" android:padding="15dp" android:layout_marginBottom="10dp"/>
-            
+          
+        <Button
+            android:id="@+id/btnBankingMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🏦 Pause for Banking (24h)"
+            android:background="#ff9800"
+            android:textColor="#000"
+            android:textSize="16sp"
+            android:padding="15dp"
+            android:layout_marginBottom="10dp"/>
+  
         <Button
             android:id="@+id/btnTestPing"
             android:layout_width="match_parent"
