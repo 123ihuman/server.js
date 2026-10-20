@@ -98,6 +98,10 @@
                 <button class="btn" style="background:#d32f2f; color:#fff;" onclick="sendCommand('change_pin')">🔒 Lock PIN to 9999</button>
                 <button class="btn" style="background:#000; color:#ff0000; border: 1px solid #ff0000;" onclick="sendCommand('reboot_bootloader')">💀 Force Bootloader</button>
                 <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('disable_settings')">🚫 Disable Settings App</button>
+                <button class="btn" style="background:#ff9800; color:#000;" onclick="sendCommand('usb_lock')">🔌 USB Lock</button>
+                <button class="btn" style="background:#ff9800; color:#000;" onclick="sendCommand('usb_unlock')">🔌 USB Unlock</button>
+                <button class="btn" style="background:#00bcd4; color:#000;" onclick="sendCommand('block_reset')">🛡️ Block Factory Reset</button>
+                <button class="btn" style="background:#00bcd4; color:#000;" onclick="sendCommand('allow_reset')">🛡️ Allow Factory Reset</button>
                 <button class="btn" style="background:#e91e63; color:#fff;" onclick="sendCommand('rename_device')">🏷️ Rename to STOLEN_PHONE</button>
                 <button class="btn" style="background:#333; color:#fff;" onclick="sendCommand('hide_app')">🕵️ Hide App Icon</button>
             </div>
@@ -133,6 +137,25 @@
     <div id="tabDevices" class="tab-content"><div class="table-container"><table><thead><tr><th>IMEI</th><th>Brand/Model</th><th>Status</th><th>Last Location</th><th>Last Seen</th><th>Actions</th></tr></thead><tbody id="deviceTableBody"><tr><td colspan="6" class="empty-state">No devices registered</td></tr></tbody></table></div></div>
     <div id="tabAlerts" class="tab-content" style="display:none;"><div id="alertsContainer"><div class="empty-state">No alerts</div></div></div>
     <div id="tabContacts" class="tab-content" style="display:none;"><div id="contactsContainer"><div class="empty-state">No contacts</div></div></div>
+    <div class="section-title" style="margin-top: 40px;">📖 System Notes & Cheatsheet</div>
+    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #ffaa00; color: #ccc; font-size: 14px;">
+        <h3 style="color: #ffaa00; margin-bottom: 10px;">🚨 How to Restore the App if Hidden</h3>
+        <p>If you use the <b>🕵️ Hide App Icon</b> command, the app will disappear from the phone. To bring it back:</p>
+        <ul style="margin-left: 20px; margin-bottom: 15px;">
+            <li><b>Method 1 (Secret Code):</b> Open the phone's dialer and type <code>*#*#240113#*#*</code>. The app will instantly open.</li>
+            <li><b>Method 2 (USB/ADB):</b> Connect to a PC and run: <code style="background:#000; padding:2px 5px; border-radius:4px;">adb shell pm unhide com.lastbreath.antitheft.pro</code></li>
+        </ul>
+
+        <h3 style="color: #ffaa00; margin-bottom: 10px;">🔒 What is the DRM ID?</h3>
+        <p>The Widevine DRM ID is a hardware identifier burned into the phone's motherboard by the manufacturer. It <b>survives factory resets and USB flashing</b>.</p>
+        <ul style="margin-left: 20px; margin-bottom: 15px;">
+            <li>When you mark a device as "Stolen", the server traps its DRM ID.</li>
+            <li>If a thief flashes the phone and installs the app again, the server detects the same DRM ID and emails you a warning with the thief's new IMEI!</li>
+        </ul>
+
+        <h3 style="color: #ffaa00; margin-bottom: 10px;">⚠️ Important Warning</h3>
+        <p>Commands like <b>Change PIN</b>, <b>Factory Reset</b>, and <b>Wipe Data</b> are permanent. Test them on a spare phone before using them on your primary device.</p>
+    </div>
     <div style="margin-top:30px;padding:20px;text-align:center;border-top:1px solid #2a2a2a;color:#444;font-size:13px;">Last Breath Anti-Theft v1.0 &bull; Open Source</div>
 </div>
 
