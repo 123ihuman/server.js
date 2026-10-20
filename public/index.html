@@ -57,17 +57,41 @@
         <div class="stat-card"><div class="number" id="statBlacklisted">0</div><div class="label">🚫 Blacklisted</div></div>
     </div>
 
+        <!-- CONTROL PANEL -->
     <div class="section-title">🎛️ Device Control Panel</div>
-    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
-        <button class="btn btn-danger" onclick="sendCommand('torch_on')" style="background:#ffaa00; color:#000;">🔦 Torch ON</button>
-        <button class="btn btn-primary" onclick="sendCommand('torch_off')">🔦 Torch OFF</button>
-        <button class="btn btn-danger" onclick="sendCommand('ring')">🔊 Ring Alarm</button>
-        <button class="btn btn-danger" onclick="sendCommand('strobe')" style="background:#9c27b0;">🚨 Screen Strobe</button>
-        <button class="btn btn-danger" onclick="sendCommand('hard_lock')">🔒 Lock Screen</button>
-        <button class="btn btn-danger" onclick="sendCommand('capture')">📷 Take Photo</button>
-        <button class="btn btn-danger" onclick="sendCommand('fake_shutdown')">🪫 Fake Shutdown</button>
-        <button class="btn btn-danger" onclick="sendCommand('record_audio')" style="background:#e91e63;">🎙️ Record Audio</button>
-        <button class="btn btn-primary" onclick="sendCommand('send_sms')" style="background:#ff5722;">💬 Send SMS</button>
+    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+        
+        <!-- Device Selector -->
+        <select id="deviceSelector" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; background: #333; color: #00ff00; border: 1px solid #00ff00; font-size: 16px;">
+            <option value="">-- Select a Device to Control --</option>
+        </select>
+
+        <!-- Standard Buttons -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button class="btn" style="background:#ffaa00; color:#000;" onclick="sendCommand('torch_on')">🔦 Torch ON</button>
+            <button class="btn btn-primary" onclick="sendCommand('torch_off')">🔦 Torch OFF</button>
+            <button class="btn btn-danger" onclick="sendCommand('ring')">🔊 Ring Alarm</button>
+            <button class="btn btn-danger" onclick="sendCommand('strobe')" style="background:#9c27b0;">🚨 Screen Strobe</button>
+            <button class="btn btn-danger" onclick="sendCommand('hard_lock')">🔒 Lock Screen</button>
+            <button class="btn btn-danger" onclick="sendCommand('capture')">📷 Take Photo</button>
+            <button class="btn btn-danger" onclick="sendCommand('fake_shutdown')">🪫 Fake Shutdown</button>
+        </div>
+
+        <!-- Root Only Buttons -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; padding-top: 15px; border-top: 1px dashed #444;">
+            <span style="color: #ffaa00; width: 100%; font-size: 12px; margin-bottom: 5px;">⚠️ Requires Root (Silently fails on non-rooted Vivo):</span>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('wifi_on')">📶 Wi-Fi ON</button>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('wifi_off')">📶 Wi-Fi OFF</button>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('data_on')">🌐 Data ON</button>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('data_off')">🌐 Data OFF</button>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('imei_zero')">🛑 Zero IMEI</button>
+        </div>
+
+        <!-- Danger Zone -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; padding-top: 15px; border-top: 1px dashed #444;">
+            <span style="color: #ff4444; width: 100%; font-size: 12px; margin-bottom: 5px;">🚨 DANGER ZONE:</span>
+            <button class="btn btn-danger" style="background:#d32f2f;" onclick="sendCommand('wipe_data')">💣 Factory Reset (Wipe Data)</button>
+        </div>
     </div>
 
     <div class="section-title">📍 Live Location Map</div>
@@ -172,25 +196,53 @@ function showLoginPrompt() {
 }
 
 function loadStats() {
-    fetch(API_URL+'/stats',{headers:getHeaders()}).then(r=>r.json()).then(d=>{ if(d.success){ document.getElementById('statDevices').textContent=d.stats.devices||0; document.getElementById('statAlerts').textContent=d.stats.pending_alerts||0; document.getElementById('statContacts').textContent=d.stats.trusted_contacts||0; }}).catch(e=>console.error(e));
+    fetch(API_URL+'/stats',{headers:getHeaders()}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            document.getElementById('statDevices').textContent     = d.stats.devices || 0;
+            document.getElementById('statAlerts').textContent      = d.stats.pending_alerts || 0;
+            document.getElementById('statContacts').textContent    = d.stats.trusted_contacts || 0;
+            document.getElementById('statBlacklisted').textContent = d.stats.blacklisted || 0;   // ← NEW LINE
+        }
+    }).catch(e=>console.error(e));
 }
 
 function loadDevices() {
     fetch(API_URL+'/devices',{headers:getHeaders()}).then(r=>r.json()).then(d=>{
         const tbody=document.getElementById('deviceTableBody');
-        if(!d.success || d.devices.length===0){ tbody.innerHTML=`<tr><td colspan="6" class="empty-state">No devices</td></tr>`; return; }
-        
-        if (d.devices.length > 0 && d.devices[0].last_seen) {
-            const lastSeenDate = new Date(d.devices[0].last_seen);
-            const now = new Date();
-            const diffMinutes = (now - lastSeenDate) / 1000 / 60;
-            const statusText = document.querySelector('.status .text');
-            const statusDot = document.querySelector('.status .dot');
-            if (diffMinutes < 3) { statusText.textContent = 'Device Online'; statusDot.style.background = '#00ff00'; }
-            else { statusText.textContent = 'Device Offline'; statusDot.style.background = '#ff4444'; }
+        if(!d.success || d.devices.length===0){
+            tbody.innerHTML=`<tr><td colspan="6" class="empty-state">No devices</td></tr>`;
+            return;
         }
 
-        tbody.innerHTML=d.devices.map(dev=>`
+                if (d.devices.length > 0) {
+            // Find the most recently seen device among ALL devices
+            let mostRecentSeen = null;
+            d.devices.forEach(dev => {
+                if (dev.last_seen) {
+                    const seenDate = new Date(dev.last_seen);
+                    if (!mostRecentSeen || seenDate > mostRecentSeen) {
+                        mostRecentSeen = seenDate;
+                    }
+                }
+            });
+
+            if (mostRecentSeen) {
+                const now = new Date();
+                const diffMinutes = (now - mostRecentSeen) / 1000 / 60;
+                const statusText = document.querySelector('.status .text');
+                const statusDot = document.querySelector('.status .dot');
+                if (diffMinutes < 3) { 
+                    statusText.textContent = 'System Online'; 
+                    statusDot.style.background = '#00ff00'; 
+                } else { 
+                    statusText.textContent = 'All Devices Offline'; 
+                    statusDot.style.background = '#ff4444'; 
+                }
+            }
+        }
+
+        // 1) Build table rows FIRST
+        tbody.innerHTML = d.devices.map(dev => `
             <tr>
                 <td><code style="background:#1a1a1a;padding:2px 8px;border-radius:4px;font-size:12px;">${dev.imei}</code></td>
                 <td>${dev.brand||'Unknown'} ${dev.model||''}</td>
@@ -200,8 +252,19 @@ function loadDevices() {
                 <td>${dev.status==='active'?`<button class="btn btn-danger" onclick="markStolen('${dev.imei}')">Mark Stolen</button>`:''}${dev.status==='stolen'?`<button class="btn btn-success" onclick="markRecovered('${dev.imei}')">Recovered</button>`:''}</td>
             </tr>
         `).join('');
+
+        // 2) THEN populate dropdown (OUTSIDE the template string!)
+        const selector = document.getElementById('deviceSelector');
+        selector.innerHTML = '<option value="">-- Select a Device to Control --</option>';
+        d.devices.forEach(device => {
+            const opt = document.createElement('option');
+            opt.value = device.imei;
+            opt.text = `${device.brand || 'Unknown'} (${device.imei}) - Status: ${device.status}`;
+            selector.appendChild(opt);
+        });
+
         updateMapMarkers(d.devices);
-    }).catch(e=>console.error(e));
+    }).catch(e=>console.error('loadDevices error:', e));
 }
 
 function loadAlerts() {
@@ -247,24 +310,34 @@ function switchTab(tab){
 }
 
 function sendCommand(action) {
-    const imei = document.getElementById('deviceTableBody').querySelector('code')?.innerText;
-    if (!imei) { alert('No device found on the table!'); return; }
+    const imei = document.getElementById('deviceSelector').value;
+    
+    if (!imei) { 
+        alert('Please select a device from the dropdown menu first!'); 
+        return; 
+    }
+
+    if (action === 'wipe_data') {
+        if (!confirm("WARNING: Are you sure you want to FACTORY RESET this device? All data will be lost forever.")) {
+            return;
+        }
+    }
     
     fetch(API_URL + '/send-command', {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ imei: imei, action: action })
     }).then(r => r.json()).then(d => {
-        if (d.success) alert(`✅ Command [${action}] queued! It will execute within 60 seconds.`);
-        else alert("Failed to send command.");
-    });
+        if (d.success) alert(`✅ Command [${action}] queued for device ${imei}!`);
+        else alert("Failed: " + (d.error || "Unknown error"));
+    }).catch(e => alert("Network error: " + e.message));
 }
 
 setInterval(function() { if (token) { loadDevices(); loadAlerts(); loadStats(); } }, 30000);
 
 setInterval(function() {
     if (!token) return;
-    fetch(API_URL + '/get-logs')
+    fetch(API_URL + '/get-logs', { headers: getHeaders() })
         .then(r => r.json())
         .then(d => {
             if (d.success) {
