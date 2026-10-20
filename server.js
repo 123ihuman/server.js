@@ -338,8 +338,17 @@ app.get('/api/stats', authenticate, async (req, res) => {
         const userId = req.user.id;
         const devices = await pool.query('SELECT COUNT(*) as count FROM devices WHERE user_id = $1', [userId]);
         const alerts = await pool.query('SELECT COUNT(*) as count FROM alerts a JOIN devices d ON a.device_id = d.id WHERE d.user_id = $1 AND a.is_resolved = false', [userId]);
-        const contacts = await pool.query('SELECT COUNT(*) as count FROM trusted_contacts WHERE user_id = $1 AND is_active = true', [userId]);
-        res.json({ success: true, stats: { devices: parseInt(devices.rows[0].count), pending_alerts: parseInt(alerts.rows[0].count), trusted_contacts: parseInt(contacts.rows[0].count) } });
+                const contacts = await pool.query('SELECT COUNT(*) as count FROM trusted_contacts WHERE user_id = $1 AND is_active = true', [userId]);
+        
+        // NEW: Count blacklisted devices
+        const blacklist = await pool.query('SELECT COUNT(*) as count FROM imei_blacklist WHERE reported_by = $1', [userId]);
+        
+        res.json({ success: true, stats: { 
+            devices: parseInt(devices.rows[0].count), 
+            pending_alerts: parseInt(alerts.rows[0].count), 
+            trusted_contacts: parseInt(contacts.rows[0].count),
+            blacklisted: parseInt(blacklist.rows[0].count) // <-- ADDED
+        } });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch stats' });
@@ -450,6 +459,52 @@ app.post('/api/upload-photo', upload.single('photo'), async (req, res) => {
         console.error('Photo upload error:', err);
         res.status(500).json({ error: 'Photo upload failed' });
     }
+}); // <--- I ADDED THIS CLOSING LINE HERE
+
+// ---------- UPLOAD VIDEO ----------
+app.post('/api/upload-video', upload.single('video'), async (req, res) => {
+    try {
+        const imei = req.body.imei || 'unknown';
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ error: 'No video uploaded' });
+        }
+
+        console.log(`🎥 Video uploaded: ${file.filename} (IMEI: ${imei})`);
+
+        res.json({
+            success: true,
+            message: 'Video uploaded successfully',
+            filename: file.filename,
+            size: file.size
+        });
+    } catch (err) {
+        console.error('Video upload error:', err);
+        res.status(500).json({ error: 'Video upload failed' });
+    }
+});
+app.post('/api/upload-video', upload.single('video'), async (req, res) => {
+    try {
+        const imei = req.body.imei || 'unknown';
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ error: 'No video uploaded' });
+        }
+
+        console.log(`🎥 Video uploaded: ${file.filename} (IMEI: ${imei})`);
+
+        res.json({
+            success: true,
+            message: 'Video uploaded successfully',
+            filename: file.filename,
+            size: file.size
+        });
+    } catch (err) {
+        console.error('Video upload error:', err);
+        res.status(500).json({ error: 'Video upload failed' });
+    }
 });
 
 // ---------- WIFI INFO (connected network) ----------
@@ -457,16 +512,25 @@ app.post('/api/wifi-info', async (req, res) => {
     try {
         const { imei, ssid, bssid, location } = req.body;
         console.log(`📶 WiFi: ${ssid} (${bssid}) for IMEI ${imei} at ${location}`);
+        
         await pool.query(
             `INSERT INTO alerts (device_id, alert_type, location, message) 
              SELECT id, 'wifi', $1, $2 FROM devices WHERE imei = $3`,
             [location, `WiFi: ${ssid} (${bssid})`, imei]
         );
+
+        // AUTO-CLEANUP: Keep only latest 100 alerts for this device
+        await pool.query(`
+            DELETE FROM alerts 
+            WHERE id NOT IN (
+                SELECT id FROM alerts a 
+                JOIN devices d ON a.device_id = d.id 
+                WHERE d.imei = $1 ORDER BY a.created_at DESC LIMIT 100
+            ) AND device_id IN (SELECT id FROM devices WHERE imei = $1)
+        `, [imei]);
+
         res.json({ success: true });
-    } catch (err) {
-        console.error('WiFi info error:', err);
-        res.status(500).json({ error: 'WiFi info failed' });
-    }
+    } catch (err) { ... }
 });
 
 // ---------- NEARBY WIFI SCAN ----------

