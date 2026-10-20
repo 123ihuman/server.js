@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.exe
+google password.txt
+audio_uploads/
+*.txt
