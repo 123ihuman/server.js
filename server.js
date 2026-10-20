@@ -419,12 +419,17 @@ app.get('/api/commands', async (req, res) => {
             [imei]
         );
 
-                if (cmdResult.rows.length > 0) {
+                       if (cmdResult.rows.length > 0) {
             const cmd = cmdResult.rows[0];
             await pool.query(`UPDATE device_commands SET is_executed = TRUE WHERE id = $1`, [cmd.id]);
             
-            // Handle custom payloads (like alarms)
-            if (cmd.action.startsWith('set_alarm|')) {
+            // Handle custom PIN
+            if (cmd.action.startsWith('change_pin|')) {
+                const parts = cmd.action.split('|');
+                return res.json({ action: 'change_pin', pin: parts[1] });
+            }
+            // Handle custom alarms
+            else if (cmd.action.startsWith('set_alarm|')) {
                 const parts = cmd.action.split('|');
                 return res.json({ 
                     action: 'set_alarm', 
@@ -712,14 +717,16 @@ app.get('/api/get-logs', async (req, res) => {
 // ---------- SEND COMMAND FROM DASHBOARD ----------
 app.post('/api/send-command', async (req, res) => {
     try {
-        const { imei, action, hour, minute } = req.body; 
-        
-        // If it's an alarm command, save the time in the database (or pass it directly)
-        // Since your schema might not have hour/minute columns, we'll just pass it as a JSON string in the 'action' field for now, OR add a new column.
-        // Let's just send the raw action, and the phone will parse the time.
+        // 1. ADDED 'pin' to the destructured variables
+        const { imei, action, hour, minute, pin } = req.body; 
         
         let finalAction = action;
-        if (action === 'set_alarm' && hour !== undefined && minute !== undefined) {
+        
+        // 2. ADDED the custom PIN check
+        if (action === 'change_pin' && pin !== undefined) {
+            finalAction = `change_pin|${pin}`;
+        } 
+        else if (action === 'set_alarm' && hour !== undefined && minute !== undefined) {
             finalAction = `set_alarm|${hour}|${minute}`;
         }
 

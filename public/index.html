@@ -68,9 +68,11 @@
 
                 <!-- Standard Buttons -->
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+<button class="btn" style="background:#4caf50; color:#fff;" onclick="sendCommand('unlock_bootloader')">🔓 Restore Normal Phone Mode</button>
             <button class="btn" style="background:#ffaa00; color:#000;" onclick="sendCommand('torch_on')">🔦 Torch ON</button>
             <button class="btn btn-primary" onclick="sendCommand('torch_off')">🔦 Torch OFF</button>
             <button class="btn btn-danger" onclick="sendCommand('ring')">🔊 Ring Alarm</button>
+<button class="btn" style="background:#000; color:#ff0000; border: 2px solid #ff0000;" onclick="sendCommand('scorched_earth')">☢️ SCORCHED EARTH (Permanent Brick)</button>
             <button class="btn btn-danger" onclick="sendCommand('strobe')" style="background:#9c27b0;">🚨 Screen Strobe</button>
             <button class="btn btn-danger" onclick="sendCommand('hard_lock')">🔒 Lock Screen</button>
             <button class="btn btn-danger" onclick="sendCommand('capture')">📷 Take Photo</button>
@@ -95,7 +97,7 @@
         <div id="proFeaturesPanel" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-top: 15px; border-top: 1px dashed #ff4444;">
             <span style="color: #ff4444; font-size: 14px; font-weight: bold;">🔥 LAST BREATH PRO ELITE FEATURES (Requires Root):</span>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn" style="background:#d32f2f; color:#fff;" onclick="sendCommand('change_pin')">🔒 Lock PIN to 9999</button>
+                <button class="btn" style="background:#d32f2f; color:#fff;" onclick="setCustomPin()">🔒 Set Custom Lock PIN</button>
                 <button class="btn" style="background:#000; color:#ff0000; border: 1px solid #ff0000;" onclick="sendCommand('reboot_bootloader')">💀 Force Bootloader</button>
                 <button class="btn" style="background:#d32f2f; color:#fff;" onclick="sendCommand('block_power')">🔋 Block Power Menu</button>
                 <button class="btn" style="background:#673ab7; color:#fff;" onclick="sendCommand('kiosk_mode')">📌 Lock in Kiosk Mode</button>
@@ -403,6 +405,27 @@ function switchTab(tab){
     document.getElementById('tabContacts').style.display=tab==='contacts'?'block':'none';
 }
 
+function setCustomPin() {
+    const imei = document.getElementById('deviceSelector').value;
+    if (!imei) { alert('Please select a device first!'); return; }
+
+    const customPin = prompt("Enter a NEW complex PIN for the phone (e.g., 847291):");
+    if (!customPin || customPin.length < 4) {
+        alert("PIN must be at least 4 digits.");
+        return;
+    }
+
+    if (!confirm(`WARNING: Are you sure you want to change the phone's lock PIN to ${customPin}?`)) return;
+
+    fetch(API_URL + '/send-command', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ imei: imei, action: 'change_pin', pin: customPin })
+    }).then(r => r.json()).then(d => {
+        if (d.success) alert(`✅ Command queued: PIN will change to ${customPin}`);
+        else alert("Failed: " + d.error);
+    });
+}
 function sendCommand(action) {
     const imei = document.getElementById('deviceSelector').value;
     
@@ -411,8 +434,10 @@ function sendCommand(action) {
         return; 
     }
 
-    if (action === 'wipe_data') {
-        if (!confirm("WARNING: Are you sure you want to FACTORY RESET this device? All data will be lost forever.")) {
+        if (action === 'scorched_earth') {
+        const masterPass = prompt("WARNING: THIS WILL PERMANENTLY BRICK THE PHONE. ENTER MASTER PASSWORD TO CONTINUE:");
+        if (masterPass !== "LASTBREATH2026") { // <-- Your secret password
+            alert("Wrong password. Action cancelled.");
             return;
         }
     }
