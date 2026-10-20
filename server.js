@@ -359,7 +359,8 @@ app.get('/api/stats', authenticate, async (req, res) => {
 // ---------- HEARTBEAT ENDPOINT ----------
 app.post('/api/heartbeat', async (req, res) => {
     try {
-        const { imei, status, last_location, drm_id } = req.body;
+        // ADDED sim_number to the destructured variables
+        const { imei, status, last_location, drm_id, sim_number } = req.body; 
         if (!imei) {
             return res.status(400).json({ error: 'IMEI required' });
         }
@@ -369,11 +370,11 @@ app.post('/api/heartbeat', async (req, res) => {
             `UPDATE devices 
              SET last_seen = NOW(), 
                  last_location = COALESCE($1, last_location),
-                 drm_id = COALESCE($2, drm_id)
-             WHERE imei = $3`,
-            [last_location || null, drm_id || null, imei]
+                 drm_id = COALESCE($2, drm_id),
+                 sim_number = COALESCE($3, sim_number)
+             WHERE imei = $4`,
+            [last_location || null, drm_id || null, sim_number || null, imei]
         );
-
         // 2. THE TRAP: Check if this DRM ID belongs to a STOLEN device
         if (drm_id && drm_id !== "UNKNOWN") {
             const stolenDevice = await pool.query(
@@ -418,22 +419,39 @@ app.get('/api/commands', async (req, res) => {
             [imei]
         );
 
-        if (cmdResult.rows.length > 0) {
+                if (cmdResult.rows.length > 0) {
             const cmd = cmdResult.rows[0];
-            // Mark as executed so it doesn't run twice
             await pool.query(`UPDATE device_commands SET is_executed = TRUE WHERE id = $1`, [cmd.id]);
+            
+            // Handle custom payloads (like alarms)
+            if (cmd.action.startsWith('set_alarm|')) {
+                const parts = cmd.action.split('|');
+                return res.json({ 
+                    action: 'set_alarm', 
+                    hour: parseInt(parts[1]), 
+                    minute: parseInt(parts[2]) 
+                });
+            }
+
             console.log(`📲 Sent command [${cmd.action}] to phone ${imei}`);
             return res.json({ action: cmd.action });
         }
 
-        // If no dashboard commands, check for standard block/restore
-                // If no dashboard commands, check for standard block/restore
-        const result = await pool.query('SELECT status FROM devices WHERE imei = $1', [imei]);
+                // If no dashboard commands, check for standard block/restore and polling modes
+        const result = await pool.query('SELECT status, force_fast_poll FROM devices WHERE imei = $1', [imei]);
         if (result.rows.length > 0) {
             const status = result.rows[0].status;
-            // SEND FAST_POLL: TRUE IF STOLEN
-            if (status === 'stolen') return res.json({ action: 'block', fast_poll: true });
-            if (status === 'recovered') return res.json({ action: 'restore', fast_poll: false });
+            const forceFast = result.rows[0].force_fast_poll;
+
+            // If the device is stolen OR manual fast poll is ON
+            if (status === 'stolen' || forceFast === true) {
+                // If stolen, we send the block action. If just fast poll, we send 'none'.
+                const action = status === 'stolen' ? 'block' : 'none';
+                return res.json({ action: action, fast_poll: true });
+            }
+            if (status === 'recovered') {
+                return res.json({ action: 'restore', fast_poll: false });
+            }
         }
 
         // Default normal mode (fast_poll: false)
@@ -693,13 +711,37 @@ app.get('/api/get-logs', async (req, res) => {
 });
 // ---------- SEND COMMAND FROM DASHBOARD ----------
 app.post('/api/send-command', async (req, res) => {
-    const { imei, action } = req.body;
-    await pool.query(
-        `INSERT INTO device_commands (imei, action) VALUES ($1, $2)`,
-        [imei, action]
-    );
-    console.log(`📤 Dashboard queued command [${action}] for device ${imei}`);
-    res.json({ success: true });
+    try {
+        const { imei, action, hour, minute } = req.body; 
+        
+        // If it's an alarm command, save the time in the database (or pass it directly)
+        // Since your schema might not have hour/minute columns, we'll just pass it as a JSON string in the 'action' field for now, OR add a new column.
+        // Let's just send the raw action, and the phone will parse the time.
+        
+        let finalAction = action;
+        if (action === 'set_alarm' && hour !== undefined && minute !== undefined) {
+            finalAction = `set_alarm|${hour}|${minute}`;
+        }
+
+        await pool.query(
+            `INSERT INTO device_commands (imei, action) VALUES ($1, $2)`,
+            [imei, finalAction]
+        );
+        console.log(`📤 Dashboard queued command [${finalAction}] for device ${imei}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to send command' });
+    }
+});
+app.post('/api/toggle-poll', authenticate, async (req, res) => {
+    try {
+        const { imei, fast_mode } = req.body;
+        await pool.query(`UPDATE devices SET force_fast_poll = $1 WHERE imei = $2`, [fast_mode, imei]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to toggle poll' });
+    }
 });
 app.post('/api/clear-alerts', authenticate, async (req, res) => {
     try {

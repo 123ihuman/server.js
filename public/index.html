@@ -97,6 +97,11 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn" style="background:#d32f2f; color:#fff;" onclick="sendCommand('change_pin')">🔒 Lock PIN to 9999</button>
                 <button class="btn" style="background:#000; color:#ff0000; border: 1px solid #ff0000;" onclick="sendCommand('reboot_bootloader')">💀 Force Bootloader</button>
+                <button class="btn" style="background:#d32f2f; color:#fff;" onclick="sendCommand('block_power')">🔋 Block Power Menu</button>
+                <button class="btn" style="background:#673ab7; color:#fff;" onclick="sendCommand('kiosk_mode')">📌 Lock in Kiosk Mode</button>
+                <button class="btn" style="background:#009688; color:#fff;" onclick="setRemoteAlarm()">⏰ Set Wake-Up Alarm</button>
+                <button class="btn" style="background:#ff0000; color:#fff;" onclick="togglePoll(true)">🚀 Force Fast Mode (5s)</button>
+                <button class="btn" style="background:#555; color:#fff;" onclick="togglePoll(false)">💤 Force Normal Mode (10m)</button>
                 <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('disable_settings')">🚫 Disable Settings App</button>
                 <button class="btn" style="background:#ff9800; color:#000;" onclick="sendCommand('usb_lock')">🔌 USB Lock</button>
                 <button class="btn" style="background:#ff9800; color:#000;" onclick="sendCommand('usb_unlock')">🔌 USB Unlock</button>
@@ -134,7 +139,7 @@
         <button class="tab-btn" onclick="switchTab('contacts')" style="background:none;border:none;color:#888;padding:10px 0;font-size:16px;cursor:pointer;">Contacts</button>
     </div>
     
-    <div id="tabDevices" class="tab-content"><div class="table-container"><table><thead><tr><th>IMEI</th><th>Brand/Model</th><th>Status</th><th>Last Location</th><th>Last Seen</th><th>Actions</th></tr></thead><tbody id="deviceTableBody"><tr><td colspan="6" class="empty-state">No devices registered</td></tr></tbody></table></div></div>
+    <div id="tabDevices" class="tab-content"><div class="table-container"><table><thead><tr><th>IMEI</th><th>Brand/Model</th><th>Status</th><th>Location & SIM</th><th>Last Seen</th><th>Actions</th></tr></thead><tbody id="deviceTableBody"><tr><td colspan="6" class="empty-state">No devices registered</td></tr></tbody></table></div></div>
     <div id="tabAlerts" class="tab-content" style="display:none;"><div id="alertsContainer"><div class="empty-state">No alerts</div></div></div>
     <div id="tabContacts" class="tab-content" style="display:none;"><div id="contactsContainer"><div class="empty-state">No contacts</div></div></div>
     <div class="section-title" style="margin-top: 40px;">📖 System Notes & Cheatsheet</div>
@@ -330,7 +335,7 @@ function loadDevices() {
                 <td><code style="background:#1a1a1a;padding:2px 8px;border-radius:4px;font-size:12px;">${dev.imei}</code></td>
                 <td>${dev.brand||'Unknown'} ${dev.model||''}</td>
                 <td><span class="status-badge ${dev.status}">${dev.status}</span></td>
-                <td>${dev.last_location||'Unknown'}</td>
+                                <td>${dev.last_location||'Unknown'}<br><span style="font-size:10px; color:#00bcd4;">${dev.sim_number||'No SIM'}</span></td>
                 <td style="font-size:12px;color:#888;">${dev.last_seen ? new Date(dev.last_seen).toLocaleString('en-IN', {timeZone:'Asia/Kolkata'}) : 'Never'}</td>
                 <td>${dev.status==='active'?`<button class="btn btn-danger" onclick="markStolen('${dev.imei}')">Mark Stolen</button>`:''}${dev.status==='stolen'?`<button class="btn btn-success" onclick="markRecovered('${dev.imei}')">Recovered</button>`:''}</td>
             </tr>
@@ -432,6 +437,39 @@ setInterval(function() {
             }
         });
 }, 3000);
+function setRemoteAlarm() {
+    const imei = document.getElementById('deviceSelector').value;
+    if (!imei) { alert('Select a device first!'); return; }
+
+    // Ask for the time
+    const timeStr = prompt("Enter alarm time (24-hour format, e.g., 07:00 or 14:30):", "07:00");
+    if (!timeStr || !timeStr.includes(':')) return;
+
+    const [hour, minute] = timeStr.split(':').map(Number);
+
+    // Send the command with hour and minute
+    fetch(API_URL + '/send-command', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ imei: imei, action: 'set_alarm', hour: hour, minute: minute })
+    }).then(r => r.json()).then(d => {
+        if (d.success) alert(`✅ Alarm queued for ${timeStr}`);
+        else alert("Failed to send alarm command.");
+    });
+}
+function togglePoll(isFast) {
+    const imei = document.getElementById('deviceSelector').value;
+    if (!imei) { alert('Select a device first!'); return; }
+    
+    fetch(API_URL + '/toggle-poll', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ imei: imei, fast_mode: isFast })
+    }).then(r => r.json()).then(d => {
+        if (d.success) alert(`✅ Switched to ${isFast ? 'FAST (5s)' : 'NORMAL (10m)'} mode!`);
+        else alert("Failed to switch mode.");
+    });
+}
 
 // Show Pro Features Panel when a device is selected
 document.getElementById('deviceSelector').addEventListener('change', function() {
