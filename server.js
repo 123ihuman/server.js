@@ -459,31 +459,10 @@ app.post('/api/upload-photo', upload.single('photo'), async (req, res) => {
         console.error('Photo upload error:', err);
         res.status(500).json({ error: 'Photo upload failed' });
     }
-}); // <--- I ADDED THIS CLOSING LINE HERE
+}); // <--- THIS IS THE CRUCIAL MISSING LINE
 
 // ---------- UPLOAD VIDEO ----------
-app.post('/api/upload-video', upload.single('video'), async (req, res) => {
-    try {
-        const imei = req.body.imei || 'unknown';
-        const file = req.file;
-
-        if (!file) {
-            return res.status(400).json({ error: 'No video uploaded' });
-        }
-
-        console.log(`🎥 Video uploaded: ${file.filename} (IMEI: ${imei})`);
-
-        res.json({
-            success: true,
-            message: 'Video uploaded successfully',
-            filename: file.filename,
-            size: file.size
-        });
-    } catch (err) {
-        console.error('Video upload error:', err);
-        res.status(500).json({ error: 'Video upload failed' });
-    }
-});
+// ---------- UPLOAD VIDEO ----------
 app.post('/api/upload-video', upload.single('video'), async (req, res) => {
     try {
         const imei = req.body.imei || 'unknown';
@@ -529,8 +508,11 @@ app.post('/api/wifi-info', async (req, res) => {
             ) AND device_id IN (SELECT id FROM devices WHERE imei = $1)
         `, [imei]);
 
-        res.json({ success: true });
-    } catch (err) { ... }
+                res.json({ success: true });
+    } catch (err) {
+        console.error('WiFi info error:', err);
+        res.status(500).json({ error: 'WiFi info failed' });
+    }
 });
 
 // ---------- NEARBY WIFI SCAN ----------
