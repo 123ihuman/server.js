@@ -110,6 +110,7 @@
         <button class="btn btn-primary" onclick="showAddDevice()">📱 Add Device</button>
         <button class="btn btn-primary" onclick="showAddContact()">👤 Add Contact</button>
         <button class="btn btn-success" onclick="exportAlerts()">📥 Export Logs (CSV)</button>
+        <button class="btn btn-danger" onclick="clearAlerts()">🗑️ Clear Old Alerts</button>
     </div>
     
     <div style="display:flex;gap:20px;border-bottom:1px solid #2a2a2a;margin-bottom:20px;">
@@ -136,10 +137,25 @@ function getHeaders() { return { 'Content-Type': 'application/json', 'Authorizat
 
 function initMap() {
     map = L.map('map').setView([20.5937, 78.9629], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+    // 1. Standard Street Map
+    const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19
     }).addTo(map);
+
+    // 2. Satellite / Natural View
+    const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+    });
+
+    // 3. Add the Layer Toggle Button
+    const baseLayers = {
+        "Street View": streetMap,
+        "Satellite View": satelliteMap
+    };
+    L.control.layers(baseLayers).addTo(map);
 }
 
 function updateMapMarkers(devices) {
@@ -183,6 +199,13 @@ function register() {
     fetch(API_URL+'/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password,full_name}) })
         .then(r=>r.json()).then(d=>{ if(d.success){ token=d.token; localStorage.setItem('lastbreath_token',token); document.getElementById('statsGrid').style.display='grid'; loadDashboard(); } else alert('Registration failed: '+d.error); })
         .catch(e=>alert('Network error: '+e.message));
+}
+function clearAlerts() {
+    if(!confirm("Delete all alerts except the latest 50 per device?")) return;
+    fetch(API_URL + '/clear-alerts', { method: 'POST', headers: getHeaders() })
+    .then(r => r.json()).then(d => {
+        if(d.success) { alert("Old alerts cleared!"); loadAlerts(); loadStats(); }
+    });
 }
 
 function loadDashboard() {

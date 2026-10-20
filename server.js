@@ -670,6 +670,22 @@ app.post('/api/send-command', async (req, res) => {
     console.log(`📤 Dashboard queued command [${action}] for device ${imei}`);
     res.json({ success: true });
 });
+app.post('/api/clear-alerts', authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        await pool.query(`
+            DELETE FROM alerts 
+            WHERE id NOT IN (
+                SELECT id FROM alerts a 
+                JOIN devices d ON a.device_id = d.id 
+                WHERE d.user_id = $1 ORDER BY a.created_at DESC LIMIT 50
+            ) AND device_id IN (SELECT id FROM devices WHERE user_id = $1)
+        `, [userId]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to clear alerts' });
+    }
+});
 // ---------- START ----------
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
