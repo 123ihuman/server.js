@@ -356,20 +356,48 @@ app.get('/api/stats', authenticate, async (req, res) => {
 });
 
 // ---------- HEARTBEAT ENDPOINT ----------
+// ---------- HEARTBEAT ENDPOINT ----------
 app.post('/api/heartbeat', async (req, res) => {
     try {
-        const { imei, status, last_location } = req.body;
+        const { imei, status, last_location, drm_id } = req.body;
         if (!imei) {
             return res.status(400).json({ error: 'IMEI required' });
         }
 
+        // 1. Update the current device
         await pool.query(
             `UPDATE devices 
              SET last_seen = NOW(), 
-                 last_location = COALESCE($1, last_location)
-             WHERE imei = $2`,
-            [last_location || null, imei]
+                 last_location = COALESCE($1, last_location),
+                 drm_id = COALESCE($2, drm_id)
+             WHERE imei = $3`,
+            [last_location || null, drm_id || null, imei]
         );
+
+        // 2. THE TRAP: Check if this DRM ID belongs to a STOLEN device
+        if (drm_id && drm_id !== "UNKNOWN") {
+            const stolenDevice = await pool.query(
+                `SELECT imei, user_id FROM devices WHERE drm_id = $1 AND status = 'stolen' AND imei != $2`,
+                [drm_id, imei]
+            );
+
+            if (stolenDevice.rows.length > 0) {
+                const originalOwnerId = stolenDevice.rows[0].user_id;
+                const originalImei = stolenDevice.rows[0].imei;
+                
+                // Alert the original owner!
+                const user = await pool.query('SELECT email FROM users WHERE id = $1', [originalOwnerId]);
+                if (user.rows.length > 0 && user.rows[0].email) {
+                    await transporter.sendMail({
+                        from: `"Last Breath" <${process.env.SMTP_USER}>`,
+                        to: user.rows[0].email,
+                        subject: '🚨 THIEF DETECTED! Phone Re-flashed!',
+                        text: `WARNING: Your stolen phone (Original IMEI: ${originalImei}) has been factory reset or re-flashed, but the thief is now using it with a NEW IMEI: ${imei}.\n\nThe hardware DRM ID matches! They are trying to bypass your security. We have logged this new IMEI.`
+                    });
+                }
+                console.log(`🚨 DRM MATCH! Thief tried to use stolen hardware with new IMEI: ${imei}`);
+            }
+        }
 
         res.json({ success: true });
     } catch (err) {
