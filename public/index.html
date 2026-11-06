@@ -157,9 +157,10 @@
         <div class="info-column">
             
             <!-- Current Device Info -->
-            <div class="info-card">
+                       <div class="info-card">
                 <h3>📱 Device Status (Selected Device)</h3>
-                <div class="info-row"><span class="info-label">IMEI:</span> <span class="info-value" id="infoImei">--</span></div>
+                <div class="info-row"><span class="info-label">Original IMEI:</span> <span class="info-value" id="infoOrigImei">--</span></div>
+                <div class="info-row"><span class="info-label">Current IMEI:</span> <span class="info-value" id="infoCurrImei" style="color: #ff4444;">--</span></div>
                 <div class="info-row"><span class="info-label">SIM / ICCID:</span> <span class="info-value" id="infoSim">--</span></div>
                 <div class="info-row"><span class="info-label">Status:</span> <span class="info-value" id="infoStatus">--</span></div>
                 <div class="info-row"><span class="info-label">Last Location:</span> <span class="info-value" id="infoLoc">--</span></div>
@@ -569,8 +570,9 @@ document.getElementById('deviceSelector').addEventListener('change', async funct
             const devices = await fetch(API_URL+'/devices',{headers:getHeaders()}).then(r=>r.json());
             const dev = devices.devices.find(d => d.imei === imei);
             
-            if (dev) {
-                document.getElementById('infoImei').textContent = dev.imei;
+                        if (dev) {
+                document.getElementById('infoOrigImei').textContent = dev.original_imei || dev.imei;
+                document.getElementById('infoCurrImei').textContent = dev.current_imei || dev.imei;
                 document.getElementById('infoSim').textContent = dev.sim_number || 'Unknown';
                 document.getElementById('infoStatus').textContent = dev.status.toUpperCase();
                 document.getElementById('infoLoc').textContent = dev.last_location || 'Unknown';

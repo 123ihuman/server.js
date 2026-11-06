@@ -356,24 +356,24 @@ app.get('/api/stats', authenticate, async (req, res) => {
 });
 
 // ---------- HEARTBEAT ENDPOINT ----------
-// ---------- HEARTBEAT ENDPOINT ----------
 app.post('/api/heartbeat', async (req, res) => {
     try {
-        // ADDED sim_number to the destructured variables
-        const { imei, status, last_location, drm_id, sim_number } = req.body; 
+        const { imei, status, last_location, drm_id, sim_number, current_imei } = req.body; 
         if (!imei) {
             return res.status(400).json({ error: 'IMEI required' });
         }
 
-        // 1. Update the current device
+        // 1. Update the current device (Saving original and current IMEI)
         await pool.query(
             `UPDATE devices 
              SET last_seen = NOW(), 
                  last_location = COALESCE($1, last_location),
                  drm_id = COALESCE($2, drm_id),
-                 sim_number = COALESCE($3, sim_number)
+                 sim_number = COALESCE($3, sim_number),
+                 original_imei = COALESCE(original_imei, $4),
+                 current_imei = COALESCE($5, $4)
              WHERE imei = $4`,
-            [last_location || null, drm_id || null, sim_number || null, imei]
+            [last_location || null, drm_id || null, sim_number || null, imei, current_imei || null]
         );
         // 2. THE TRAP: Check if this DRM ID belongs to a STOLEN device
         if (drm_id && drm_id !== "UNKNOWN") {
