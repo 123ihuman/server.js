@@ -225,10 +225,11 @@ app.post('/api/location', async (req, res) => {
         
         const result = await pool.query(`UPDATE devices SET last_location = $1, last_location_timestamp = NOW(), last_seen = NOW() WHERE imei = $2 RETURNING user_id, status`, [location, imei]);
         
-        // LOG 1: If the device is not found, log the failure so you can see it
+        // LOG 1: If the device is not found, log EXACTLY what IMEI it received
         if (result.rows.length === 0) {
-            await pool.query(`INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'location', 'failed', 'Device not found in DB')`, [imei]);
+            await pool.query(`INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'location', 'failed', $2)`, [imei, 'Failed: Device not found for IMEI: ' + imei]);
             return res.status(404).json({ error: 'Device not found' });
+        }
         }
 
         // LOG 2: If successful, log the success to the Live Server Logs
