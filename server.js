@@ -546,10 +546,16 @@ app.post('/api/wifi-info', async (req, res) => {
         const { imei, ssid, bssid, location } = req.body;
         console.log(`📶 WiFi: ${ssid} (${bssid}) for IMEI ${imei} at ${location}`);
         
-        await pool.query(
+                await pool.query(
             `INSERT INTO alerts (device_id, alert_type, location, message) 
              SELECT id, 'wifi', $1, $2 FROM devices WHERE imei = $3`,
             [location, `WiFi: ${ssid} (${bssid})`, imei]
+        );
+
+        // ADD THIS: Also write to Live Server Logs
+        await pool.query(
+            `INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'wifi_info', 'success', $2)`,
+            [imei, `Connected to WiFi: ${ssid}`]
         );
 
         // AUTO-CLEANUP: Keep only latest 100 alerts for this device
@@ -618,10 +624,16 @@ app.post('/api/cell-info', async (req, res) => {
         const { imei, cell_info, location } = req.body;
         console.log(`📡 Cell: ${cell_info} for IMEI ${imei}`);
 
-        await pool.query(
+                await pool.query(
             `INSERT INTO alerts (device_id, alert_type, location, message) 
              SELECT id, 'cell', $1, $2 FROM devices WHERE imei = $3`,
             [location, `Cell: ${cell_info}`, imei]
+        );
+
+        // ADD THIS: Also write to Live Server Logs
+        await pool.query(
+            `INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'cell_info', 'success', $2)`,
+            [imei, `Cell Tower Updated: ${cell_info}`]
         );
 
         // Parse cell_info format: CID:xxxx,LAC:xxxx,MCC:xxx,MNC:xx
@@ -672,12 +684,19 @@ app.post('/api/test-ping', async (req, res) => {
         const { imei, message } = req.body;
         console.log(`🔔 TEST PING RECEIVED from ${imei}: ${message}`);
         
-        // Add it to the Alerts table so it shows on the dashboard
+        // Add it to the Alerts table
         await pool.query(
             `INSERT INTO alerts (device_id, alert_type, location, message) 
              SELECT id, 'security', 'Unknown', $1 FROM devices WHERE imei = $2`,
             [`TEST PING: ${message}`, imei]
         );
+
+        // ADD THIS: Also write it to the Live Server Logs!
+        await pool.query(
+            `INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'test_ping', 'success', $2)`,
+            [imei, message]
+        );
+
         res.json({ success: true });
     } catch (err) {
         console.error('Ping error:', err);
