@@ -40,7 +40,20 @@
         .empty-state { text-align: center; padding: 40px; color: #666; }
         #map { height: 350px; width: 100%; border-radius: 10px; margin-bottom: 20px; border: 1px solid #2a2a2a; }
         #liveLogs { background: #000; border: 1px solid #333; color: #00ff00; padding: 15px; height: 150px; overflow-y: scroll; font-family: monospace; font-size: 12px; margin-bottom: 30px; border-radius: 8px; }
-        @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .header { flex-direction: column; align-items: flex-start; gap: 10px; } #map { height: 300px; } }
+               @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .header { flex-direction: column; align-items: flex-start; gap: 10px; } #map { height: 300px; } }
+        
+        /* PROFESSIONAL COMMAND CENTER LAYOUT */
+        .command-center { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+        .control-column { flex: 1.2; min-width: 400px; }
+        .info-column { flex: 1; min-width: 350px; display: flex; flex-direction: column; gap: 20px; }
+        .info-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 15px; }
+        .info-card h3 { color: #00ff00; margin-bottom: 10px; font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .info-label { color: #888; }
+        .info-value { color: #fff; font-weight: bold; }
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; max-height: 250px; overflow-y: auto; }
+        .media-item { background: #000; border: 1px solid #333; border-radius: 5px; padding: 5px; text-align: center; font-size: 12px;}
+        .media-item img, .media-item video { width: 100%; height: 80px; object-fit: cover; border-radius: 3px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -57,18 +70,27 @@
         <div class="stat-card"><div class="number" id="statBlacklisted">0</div><div class="label">🚫 Blacklisted</div></div>
     </div>
 
-        <!-- CONTROL PANEL -->
-    <div class="section-title">🎛️ Device Control Panel</div>
-    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+            <div class="command-center">
+        
+        <!-- LEFT COLUMN: CONTROLS & MAP -->
+        <div class="control-column">
+            <!-- CONTROL PANEL -->
+            <div class="section-title">🎛️ Device Control Panel</div>
+            <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
         
         <!-- Device Selector -->
         <select id="deviceSelector" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; background: #333; color: #00ff00; border: 1px solid #00ff00; font-size: 16px;">
             <option value="">-- Select a Device to Control --</option>
         </select>
 
-                <!-- Standard Buttons -->
+                                <!-- Standard Buttons -->
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-<button class="btn" style="background:#4caf50; color:#fff;" onclick="sendCommand('unlock_bootloader')">🔓 Restore Normal Phone Mode</button>
+            <button class="btn" style="background:#4caf50; color:#fff;" onclick="sendCommand('unlock_bootloader')">🔓 Restore Normal Phone Mode</button>
+            
+            <!-- NEW START/STOP TRACKING BUTTONS -->
+            <button class="btn" style="background:#00bcd4; color:#000;" onclick="sendCommand('start_tracking')">▶️ Start Tracking</button>
+            <button class="btn" style="background:#f44336; color:#fff;" onclick="sendCommand('stop_tracking')">⏸️ Stop Tracking</button>
+            
             <button class="btn" style="background:#ffaa00; color:#000;" onclick="sendCommand('torch_on')">🔦 Torch ON</button>
             <button class="btn btn-primary" onclick="sendCommand('torch_off')">🔦 Torch OFF</button>
             <button class="btn btn-danger" onclick="sendCommand('ring')">🔊 Ring Alarm</button>
@@ -127,8 +149,34 @@
         </div>
     </div>
 
-    <div class="section-title">📍 Live Location Map</div>
-    <div id="map"></div>
+               <div class="section-title">📍 Live Location Map</div>
+            <div id="map"></div>
+        </div> <!-- END OF LEFT COLUMN -->
+
+        <!-- RIGHT COLUMN: INTEL & MEDIA -->
+        <div class="info-column">
+            
+            <!-- Current Device Info -->
+            <div class="info-card">
+                <h3>📱 Device Status (Selected Device)</h3>
+                <div class="info-row"><span class="info-label">IMEI:</span> <span class="info-value" id="infoImei">--</span></div>
+                <div class="info-row"><span class="info-label">SIM / ICCID:</span> <span class="info-value" id="infoSim">--</span></div>
+                <div class="info-row"><span class="info-label">Status:</span> <span class="info-value" id="infoStatus">--</span></div>
+                <div class="info-row"><span class="info-label">Last Location:</span> <span class="info-value" id="infoLoc">--</span></div>
+                <div class="info-row"><span class="info-label">Last Seen:</span> <span class="info-value" id="infoSeen">--</span></div>
+            </div>
+
+            <!-- Media Vault -->
+            <div class="info-card">
+                <h3>📸 Captured Media (Thief Evidence)</h3>
+                <div class="media-grid" id="mediaContainer">
+                    <div style="color: #666; font-size: 12px;">No media uploaded yet...</div>
+                </div>
+            </div>
+
+        </div> <!-- END OF RIGHT COLUMN -->
+
+       </div> <!-- END OF COMMAND CENTER -->
 
     <div class="section-title">🖥️ Live Server Logs</div>
     <div id="liveLogs">Waiting for logs...</div>
@@ -434,10 +482,16 @@ function sendCommand(action) {
         return; 
     }
 
-        if (action === 'scorched_earth') {
+           if (action === 'scorched_earth') {
         const masterPass = prompt("WARNING: THIS WILL PERMANENTLY BRICK THE PHONE. ENTER MASTER PASSWORD TO CONTINUE:");
         if (masterPass !== "LASTBREATH2026") { // <-- Your secret password
             alert("Wrong password. Action cancelled.");
+            return;
+        }
+    }
+
+    if (action === 'stop_tracking') {
+        if (!confirm("Are you sure you want to STOP tracking this device? It will remain offline until you send 'Start Tracking'.")) {
             return;
         }
     }
@@ -502,22 +556,91 @@ function togglePoll(isFast) {
     });
 }
 
-// Show Pro Features Panel when a device is selected
-document.getElementById('deviceSelector').addEventListener('change', function() {
-    const val = this.value;
+// Update Device Info and Pro Panel when a device is selected
+document.getElementById('deviceSelector').addEventListener('change', async function() {
+    const imei = this.value;
     const proPanel = document.getElementById('proFeaturesPanel');
-    if (val) {
-        // For testing, we will show the panel whenever a device is selected.
-        // Later, we can check the server to see if the device is actually Pro.
+    
+    if (imei) {
         proPanel.style.display = 'flex'; 
+        
+        // Fetch current device data for the Info Card
+        try {
+            const devices = await fetch(API_URL+'/devices',{headers:getHeaders()}).then(r=>r.json());
+            const dev = devices.devices.find(d => d.imei === imei);
+            
+            if (dev) {
+                document.getElementById('infoImei').textContent = dev.imei;
+                document.getElementById('infoSim').textContent = dev.sim_number || 'Unknown';
+                document.getElementById('infoStatus').textContent = dev.status.toUpperCase();
+                document.getElementById('infoLoc').textContent = dev.last_location || 'Unknown';
+                document.getElementById('infoSeen').textContent = dev.last_seen ? new Date(dev.last_seen).toLocaleString('en-IN') : 'Never';
+            }
+        } catch (e) {
+            console.error("Error fetching device info", e);
+        }
     } else {
         proPanel.style.display = 'none';
+        // Reset info card
+        document.getElementById('infoImei').textContent = '--';
+        document.getElementById('infoSim').textContent = '--';
+        document.getElementById('infoStatus').textContent = '--';
+        document.getElementById('infoLoc').textContent = '--';
+        document.getElementById('infoSeen').textContent = '--';
     }
 });
+
+// Function to load media from the server
+async function loadMedia() {
+    if (!token) return;
+    try {
+        const res = await fetch(API_URL + '/media-list', {headers: getHeaders()});
+        const data = await res.json();
+        const container = document.getElementById('mediaContainer');
+        
+        if (!data.success || data.files.length === 0) {
+            container.innerHTML = '<div style="color: #666; font-size: 12px; grid-column: 1 / -1;">No media uploaded yet...</div>';
+            return;
+        }
+
+        container.innerHTML = data.files.map(f => {
+            const isVideo = f.filename.toLowerCase().endsWith('.mp4');
+            const isAudio = f.filename.toLowerCase().endsWith('.amr') || f.filename.toLowerCase().endsWith('.m4a');
+            
+            let mediaHtml = '';
+            if (isVideo) mediaHtml = `<video src="${f.url}" controls></video>`;
+            else if (isAudio) mediaHtml = `<div style="font-size: 30px; padding-top: 20px;">🎙️</div>`;
+            else mediaHtml = `<img src="${f.url}" />`;
+
+            // Extract IMEI from filename (format: IMEI_timestamp.ext)
+            const fileImei = f.filename.split('_')[0];
+
+            return `
+                <div class="media-item">
+                    ${mediaHtml}
+                    <div style="color: #00ff00; font-size: 10px;">${fileImei}</div>
+                    <div style="color: #888; font-size: 10px;">${f.size}</div>
+                    <a href="${f.url}" target="_blank" style="color: #1976d2; font-size: 10px; text-decoration: none;">Download</a>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error("Media Load Error", e);
+    }
+}
+
+// Load media immediately and then every 10 seconds
+setInterval(loadMedia, 10000);
+
 document.addEventListener('DOMContentLoaded', function(){
     initMap();
     document.getElementById('statsGrid').style.display=token?'grid':'none';
-    if(token) loadDashboard(); else showLoginPrompt();
+    if(token) {
+        loadDashboard();
+        loadMedia(); // Start fetching media on page load
+    } else {
+        showLoginPrompt();
+    }
 });
 </script>
 </body>

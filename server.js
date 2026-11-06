@@ -766,6 +766,53 @@ app.post('/api/clear-alerts', authenticate, async (req, res) => {
         res.status(500).json({ error: 'Failed to clear alerts' });
     }
 });
+// ---------- MEDIA VAULT & STATIC FILES ----------
+// Serve the uploaded media folder publicly
+app.use('/media', express.static(audioUploadDir));
+
+// Endpoint to list all uploaded files
+app.get('/api/media-list', async (req, res) => {
+    try {
+        const files = fs.readdirSync(audioUploadDir).map(file => {
+            const stats = fs.statSync(path.join(audioUploadDir, file));
+            return {
+                filename: file,
+                url: `/media/${file}`,
+                size: (stats.size / 1024 / 1024).toFixed(2) + ' MB',
+                timestamp: stats.mtime
+            };
+        }).sort((a, b) => b.timestamp - a.timestamp); // Newest first
+        res.json({ success: true, files });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to read media' });
+    }
+});
+// ---------- MEDIA VAULT & STATIC FILES ----------
+// Serve the uploaded media folder publicly so the dashboard can see photos/videos
+app.use('/media', express.static(audioUploadDir));
+
+// Endpoint to list all uploaded files for the dashboard
+app.get('/api/media-list', async (req, res) => {
+    try {
+        if (!fs.existsSync(audioUploadDir)) {
+            return res.json({ success: true, files: [] });
+        }
+        const files = fs.readdirSync(audioUploadDir).map(file => {
+            const stats = fs.statSync(path.join(audioUploadDir, file));
+            return {
+                filename: file,
+                url: `/media/${file}`,
+                size: (stats.size / 1024 / 1024).toFixed(2) + ' MB',
+                timestamp: stats.mtime
+            };
+        }).sort((a, b) => b.timestamp - a.timestamp); // Newest first
+        res.json({ success: true, files });
+    } catch (err) {
+        console.error('Media list error:', err);
+        res.status(500).json({ error: 'Failed to read media' });
+    }
+});
+
 // ---------- START ----------
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
