@@ -217,12 +217,23 @@ app.post('/api/devices/:imei/recovered', authenticate, async (req, res) => {
 });
 
 // LOCATION
+// LOCATION
 app.post('/api/location', async (req, res) => {
     try {
         const { imei, location } = req.body;
         if (!imei || !location) return res.status(400).json({ error: 'Missing fields' });
+        
         const result = await pool.query(`UPDATE devices SET last_location = $1, last_location_timestamp = NOW(), last_seen = NOW() WHERE imei = $2 RETURNING user_id, status`, [location, imei]);
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Device not found' });
+        
+        // LOG 1: If the device is not found, log the failure so you can see it
+        if (result.rows.length === 0) {
+            await pool.query(`INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'location', 'failed', 'Device not found in DB')`, [imei]);
+            return res.status(404).json({ error: 'Device not found' });
+        }
+
+        // LOG 2: If successful, log the success to the Live Server Logs
+        await pool.query(`INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'location', 'success', $2)`, [imei, `Location updated: ${location}`]);
+
         const { user_id, status } = result.rows[0];
         if (status === 'stolen') {
             const user = await pool.query('SELECT email, phone FROM users WHERE id = $1', [user_id]);
@@ -412,6 +423,8 @@ app.get('/api/commands', async (req, res) => {
     try {
         const imei = req.query.imei;
         if (!imei) return res.status(400).json({ error: 'IMEI required' });
+// ADD THIS LINE: If the phone is polling, it is 100% ONLINE
+        await pool.query(`UPDATE devices SET last_seen = NOW() WHERE imei = $1`, [imei]);
 
         // Check if there is a pending command from the dashboard
         const cmdResult = await pool.query(
@@ -682,6 +695,8 @@ app.post('/api/cell-info', async (req, res) => {
 app.post('/api/test-ping', async (req, res) => {
     try {
         const { imei, message } = req.body;
+// ADD THIS: Update last seen so dashboard knows it's online
+        await pool.query(`UPDATE devices SET last_seen = NOW() WHERE imei = $1`, [imei]);
         console.log(`🔔 TEST PING RECEIVED from ${imei}: ${message}`);
         
         // Add it to the Alerts table
