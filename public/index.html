@@ -516,8 +516,8 @@ setInterval(function() {
         .then(d => {
             if (d.success) {
                 const logContainer = document.getElementById('liveLogs');
-                logContainer.innerHTML = d.logs.map(l => 
-                    `<div>[${l.action}] ${l.status}: ${l.message} <span style="color:#888">(${new Date(l.created_at).toLocaleTimeString()})</span></div>`
+                                               logContainer.innerHTML = d.logs.map(l => 
+                    `<div>[${l.action}] ${l.status}: ${l.message} <span style="color:#888">(${l.time_ist})</span></div>`
                 ).join('');
                 logContainer.scrollTop = logContainer.scrollHeight;
             }

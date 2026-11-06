@@ -18,12 +18,11 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-me';
 
 const pool = new Pool({
-    connectionString: 'postgresql://neondb_owner:npg_0d9AsMrUQaxu@ep-cold-boat-azyganzb-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require',
+    connectionString: 'postgresql://neondb_owner:npg_0d9AsMrUQaxu@ep-cold-boat-azyganzb-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
     ssl: {
         rejectUnauthorized: false
     }
 });
-
 pool.connect((err) => {
     if (err) { console.error('❌ DB connection failed:', err.stack); process.exit(1); }
     else console.log('✅ Database connected');
@@ -225,14 +224,11 @@ app.post('/api/location', async (req, res) => {
         
         const result = await pool.query(`UPDATE devices SET last_location = $1, last_location_timestamp = NOW(), last_seen = NOW() WHERE imei = $2 RETURNING user_id, status`, [location, imei]);
         
-        // LOG 1: If the device is not found, log EXACTLY what IMEI it received
         if (result.rows.length === 0) {
             await pool.query(`INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'location', 'failed', $2)`, [imei, 'Failed: Device not found for IMEI: ' + imei]);
             return res.status(404).json({ error: 'Device not found' });
         }
-        }
 
-        // LOG 2: If successful, log the success to the Live Server Logs
         await pool.query(`INSERT INTO device_logs (imei, action, status, message) VALUES ($1, 'location', 'success', $2)`, [imei, `Location updated: ${location}`]);
 
         const { user_id, status } = result.rows[0];
@@ -246,14 +242,13 @@ app.post('/api/location', async (req, res) => {
                         subject: '📍 Your stolen phone has been located!',
                         text: `Your phone (IMEI: ${imei}) was located at: ${location}\nTime: ${new Date().toISOString()}`
                     });
-                    console.log('✅ Email alert sent successfully.');
                 } catch (emailError) {
                     console.error('⚠️ Email failed:', emailError.message);
                 }
             }
         }
         res.json({ success: true });
-    } catch (err) {
+       } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Location update failed' });
     }
@@ -741,11 +736,17 @@ app.post('/api/debug-log', async (req, res) => {
 });
 
 // Fetch logs for the dashboard
+// Fetch logs for the dashboard
 app.get('/api/get-logs', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM device_logs ORDER BY id DESC LIMIT 15');
+        const result = await pool.query(
+            `SELECT id, imei, action, status, message, 
+             TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata', 'HH24:MI:SS') as time_ist 
+             FROM device_logs ORDER BY id DESC LIMIT 15`
+        );
         res.json({ success: true, logs: result.rows });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Fetch failed' });
     }
 });
